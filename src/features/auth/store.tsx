@@ -1,12 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import * as SecureStore from "expo-secure-store";
 import { apiClient } from "../../lib/apiClient";
+import { socket } from "../../lib/socketClient";
+
 
 interface User {
   id: number;
   name: string;
   email: string;
-  role: "CLIENT" | "ADMIN";
+  role: "CLIENT" | "ADMIN" | "TECHNICIAN";
 }
 
 interface AuthContextType {
@@ -35,11 +37,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const storedToken = await SecureStore.getItemAsync("authToken");
         if (storedToken) {
-          // Verify with backend user token decoding mechanisms if necessary
           setToken(storedToken);
           setIsGuest(false);
+          
+          // Asynchronously attempt to decode/fetch active user details from server targets
+          try {
+            const res = await apiClient.get("/jobs/my"); // Safe query to verify token validation
+            // If valid, open socket connection streams
+            socket.connect();
+          } catch (apiErr) {
+            console.warn("Token validation failed on boot, skipping socket auto-connect.");
+          }
         } else {
-          // Do not auto-mark new users as guests — leave as unauthenticated
           setIsGuest(false);
         }
       } catch (e) {
@@ -56,6 +65,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setToken(newToken);
     setUser(newUser);
     setIsGuest(false);
+
+    // Initialize real-time infrastructure and execute room alignment handshakes
+    socket.connect();
+    socket.emit("join", { userId: newUser.id, role: newUser.role });
   };
 
   const logout = async () => {
@@ -63,6 +76,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setToken(null);
     setUser(null);
     setIsGuest(true);
+
+    // Disconnect stream interfaces securely to block unauthorized background events
+    socket.disconnect();
   };
 
   const setAsGuest = () => {

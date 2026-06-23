@@ -1,18 +1,36 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { useRouter } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
 import { theme } from "../../../theme";
 import { Button } from "../../../components/ui/Button";
 import { useJobFormStore } from "../../../features/services/postJobStore";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import {SafeAreaView} from "react-native-safe-area-context";
 export default function PhotosStep() {
   const router = useRouter();
   const { formData, updateFields } = useJobFormStore();
 
-  const mockCameraLibraryPicker = () => {
-    // Simulates standard document gallery platform callbacks
-    updateFields({ localImageUri: "file:///var/mobile/containers/Data/Application/mock-photo.jpg" });
+  const handleCameraLibraryPicker = async () => {
+    // Request hardware gallery permissions from the mobile operating system
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (permissionResult.granted === false) {
+      Alert.alert("Permission Required", "Access to your photo gallery is required to upload visual context evidence.");
+      return;
+    }
+
+    // Launch the native system image picker selection modal interface
+    const pickerResult = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      quality: 0.7, // Slightly compresses asset scale footprints to minimize transmission bounds
+    });
+
+    if (!pickerResult.canceled && pickerResult.assets && pickerResult.assets.length > 0) {
+      // Pass the real native storage cache asset URI to your wizard provider data layer
+      updateFields({ localImageUri: pickerResult.assets[0].uri });
+    }
   };
 
   return (
@@ -21,7 +39,7 @@ export default function PhotosStep() {
         <Text style={styles.stepIndicator}>Step 3 of 4</Text>
         <Text style={styles.title}>Attach Visual Context Evidence</Text>
 
-        <TouchableOpacity style={styles.uploadPlaceholderBox} onPress={mockCameraLibraryPicker} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.uploadPlaceholderBox} onPress={handleCameraLibraryPicker} activeOpacity={0.8}>
           {formData.localImageUri ? (
             <Text style={styles.photoBoxText}>✓ Image Attached Successfully {"\n"}<Text style={{ fontSize: 11 }}>({formData.localImageUri.split("/").pop()})</Text></Text>
           ) : (
