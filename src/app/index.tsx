@@ -7,25 +7,28 @@ import { theme } from "../theme";
 
 export default function AppEntryGate() {
   const router = useRouter();
-  const { token, isLoading, isGuest } = useAuth();
+  const { token, isLoading, isGuest, user } = useAuth();
 
   useEffect(() => {
-    // Wait until the authentication store finishes reading from SecureStore/localStorage
+    // Wait until secure store loading completes
     if (isLoading) return;
 
     if (token) {
-      // 1. User is authenticated -> Send them straight to the main app dashboard tabs
-      router.replace("/(client)");
+      // User is verified! Check role matrix to bypass onboarding completely
+      if (user?.role === "TECHNICIAN") {
+        router.replace("/(technician)");
+      } else {
+        router.replace("/(client)");
+      }
     } else if (isGuest) {
-      // 2. User is verified as an anonymous guest -> Send them to the marketplace home layout
+      // Anonymous browser bypass
       router.replace("/(client)");
     } else {
-      // 3. Brand new user with no credentials -> Send them to the onboarding sequence
+      // First time entry route checkpoint
       router.replace("/onboarding/welcome");
     }
-  }, [token, isLoading, isGuest]);
+  }, [token, isLoading, isGuest, user]);
 
-  // Premium neutral loading splash framework while state synchronizes
   return (
     <View style={styles.splashContainer}>
       <ActivityIndicator size="large" color={theme.colors.primary} />

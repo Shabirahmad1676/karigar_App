@@ -6,22 +6,27 @@ import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
 import { useJobFormStore } from "../../../features/services/postJobStore";
 import { apiClient } from "../../../lib/apiClient";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import {SafeAreaView} from "react-native-safe-area-context";
 export default function ReviewStep() {
   const router = useRouter();
   const { formData, clearForm } = useJobFormStore();
   const [submitting, setSubmitting] = useState(false);
 
   const handleFinalSubmission = async () => {
+    // Safety check: Prevent network calls if data fields are missing
+    if (!formData.title || !formData.description || !formData.serviceId) {
+      Alert.alert("Missing Data", "Your job post details appear to be empty. Please go back and fill out the form steps.");
+      return;
+    }
+
     setSubmitting(true);
     try {
-      // 1. Post the core job entity text structures to the transactional schema controller
       const jobPayload = {
         title: formData.title,
         description: formData.description,
-        budget: 1500, // Budget can be dynamically collected or mapped here
-        serviceId: formData.serviceId,
+        budget: 1500, 
+        serviceId: Number(formData.serviceId),
         latitude: formData.latitude,
         longitude: formData.longitude,
         address: formData.address,
@@ -30,7 +35,6 @@ export default function ReviewStep() {
       const jobResponse = await apiClient.post("/jobs", jobPayload);
       const createdJobId = jobResponse.data.id;
 
-      // 2. Multi-part binary layout file stream conversion check (Prompt 5 upload)
       if (formData.localImageUri && createdJobId) {
         const imageForm = new FormData();
         imageForm.append("image", {
@@ -44,9 +48,9 @@ export default function ReviewStep() {
         });
       }
 
-      Alert.alert("Success", "Your maintenance profile request has been created successfully!", [
+      Alert.alert("Success", "Your maintenance request has been created!", [
         {
-          text: "View My Ledger Board",
+          text: "View My Ledger",
           onPress: () => {
             clearForm();
             router.replace("/(client)");
@@ -55,7 +59,7 @@ export default function ReviewStep() {
       ]);
     } catch (err: any) {
       console.error(err);
-      Alert.alert("Submission Error", err.response?.data?.error || "Failed to commit record onto server ledger targets.");
+      Alert.alert("Submission Error", err.response?.data?.error || "Failed to connect to the server.");
     } finally {
       setSubmitting(false);
     }
@@ -69,13 +73,22 @@ export default function ReviewStep() {
 
         <Card style={styles.reviewCard}>
           <Text style={styles.sectionHeader}>Core Scope</Text>
-          <Text style={styles.reviewText}><strong>Title:</strong> {formData.title}</Text>
-          <Text style={styles.reviewText}><strong>Context:</strong> {formData.description}</Text>
+          <Text style={styles.reviewText}>
+            <Text style={styles.boldLabel}>Title: </Text>
+            {formData.title || "Wiped/Missing"}
+          </Text>
+          <Text style={styles.reviewText}>
+            <Text style={styles.boldLabel}>Context: </Text>
+            {formData.description || "Wiped/Missing"}
+          </Text>
 
           <View style={styles.divider} />
 
           <Text style={styles.sectionHeader}>Deployment Coordinates</Text>
-          <Text style={styles.reviewText} numberOfLines={2}><strong>Address:</strong> {formData.address || "None specified"}</Text>
+          <Text style={styles.reviewText} numberOfLines={2}>
+            <Text style={styles.boldLabel}>Address: </Text>
+            {formData.address || "None specified"}
+          </Text>
 
           <View style={styles.divider} />
 
@@ -102,6 +115,7 @@ const styles = StyleSheet.create({
   reviewCard: { width: "100%", padding: theme.spacing.lg, marginBottom: theme.spacing.xl },
   sectionHeader: { fontSize: 12, fontWeight: "bold", color: theme.colors.primary, textTransform: "uppercase", marginBottom: 6 },
   reviewText: { fontSize: 14, color: theme.colors.textPrimary, marginBottom: theme.spacing.sm, lineHeight: 20 },
+  boldLabel: { fontWeight: "700" },
   divider: { height: 1, backgroundColor: theme.colors.border, marginVertical: theme.spacing.sm },
   buttonRow: { flexDirection: "row", gap: 15, marginTop: "auto" },
 });

@@ -83,7 +83,7 @@ export const AuthGateModal: React.FC = () => {
 
 const styles = StyleSheet.create({
   overlay: { flex: 1, justifyContent: "flex-end" },
-  backdrop: { ...StyleSheet.absoluteFillObject, background: "#1A1A1A" },
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: "#1A1A1A" },
   sheet: {
     backgroundColor: theme.colors.surface,
     borderTopLeftRadius: theme.spacing.cardRadius,
@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
   indicator: {
     width: 40,
     height: 4,
-    background: theme.colors.border,
+    backgroundColor: theme.colors.border,
     borderRadius: 2,
     marginBottom: theme.spacing.lg,
   },
