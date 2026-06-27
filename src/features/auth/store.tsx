@@ -9,6 +9,9 @@ interface User {
   name: string;
   email: string;
   role: "CLIENT" | "ADMIN" | "TECHNICIAN";
+  phone?: string;
+  verificationStatus?: string
+  isVerified?: boolean;
 }
 
 interface AuthContextType {

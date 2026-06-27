@@ -1,7 +1,7 @@
 import { Tabs } from "expo-router";
 import { theme } from "../../theme";
 import { StyleSheet } from "react-native";
-import Ionicon from "@react-native-vector-icons/ionicons";
+import Icon from "@react-native-vector-icons/ionicons"; // Fixed uniform default vector import alignment
 
 export default function ClientTabsLayout() {
   return (
@@ -21,7 +21,7 @@ export default function ClientTabsLayout() {
           title: "Marketplace",
           tabBarLabel: "Find Hub",
           tabBarIcon: ({ color, size }) => (
-            <Ionicon name="search-outline" size={size ?? 24} color={color} />
+            <Icon name="search-outline" size={size ?? 24} color={color} />
           ),
         }}
       />
@@ -33,7 +33,7 @@ export default function ClientTabsLayout() {
           title: "My Bookings",
           tabBarLabel: "Bookings",
           tabBarIcon: ({ color, size }) => (
-            <Ionicon name="briefcase-outline" size={size ?? 24} color={color} />
+            <Icon name="briefcase-outline" size={size ?? 24} color={color} />
           ),
         }}
       />
@@ -45,12 +45,11 @@ export default function ClientTabsLayout() {
           title: "Profile",
           tabBarLabel: "Account",
           tabBarIcon: ({ color, size }) => (
-            <Ionicon name="person-outline" size={size ?? 24} color={color} />
+            <Icon name="person-outline" size={size ?? 24} color={color} />
           ),
         }}
       />
 
-      {/* Hide the multi-step post-job wizard flow from appearing in the main bottom menu bar */}
       <Tabs.Screen
         name="post-job"
         options={{
@@ -58,19 +57,17 @@ export default function ClientTabsLayout() {
         }}
       />
 
-      {/* Append this configuration option directly inside your client folder layout file */}
       <Tabs.Screen
         name="jobs/[id]"
         options={{
-          href: null, // Instructs Expo Router to keep this file active but block it from drawing an icon on the bottom panel
+          href: null, 
         }}
       />
 
-      {/* Put this block alongside your other Tabs.Screen configuration parameters */}
       <Tabs.Screen
         name="services/[id]"
         options={{
-          href: null, // Keeps the page accessible via routing, but completely hidden from drawing an extra icon in the bottom menu bar
+          href: null, 
         }}
       />
     </Tabs>
