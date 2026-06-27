@@ -25,7 +25,6 @@ export default function TechnicianTabsLayout() {
           ),
         }}
       />
-
       {/* 2. Technician Professional Profile & Dissemination Logs */}
       <Tabs.Screen
         name="profile"

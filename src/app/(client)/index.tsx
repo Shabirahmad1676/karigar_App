@@ -69,13 +69,13 @@ export default function HomeScreen() {
   };
 
   const handleCategoryPress = (categoryId: number) => {
-    executeProtectedAction(() => {
+    
       // Direct pass to detail views or filters matching category parameters
       router.push({
         pathname: "/(client)/services/[id]",
         params: { id: categoryId }
       });
-    });
+
   };
 
   // Modern Premium UI Mocks for Nearby Technicians (Matching AppHome.PNG specs)

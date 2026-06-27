@@ -20,7 +20,17 @@ interface JobBooking {
   status: JobStatusType;
   address: string | null;
   createdAt: string;
-  service: { id: number; name: string; category: string };
+  service: { 
+    id: number; 
+    name: string; 
+    // CHANGE THIS: Map the actual incoming database object structure
+    category: {
+      id: number;
+      name: string;
+      iconName: string;
+      isActive: boolean;
+    }; 
+  };
 }
 
 export default function BookingsScreen() {
@@ -117,7 +127,7 @@ export default function BookingsScreen() {
                 <Card style={styles.bookingCard}>
                   <View style={styles.cardHeader}>
                     <View style={styles.categoryInfoStack}>
-                      <Text style={styles.serviceCategoryText}>{item.service.category}</Text>
+                      <Text style={styles.serviceCategoryText}>{item.service.category.name}</Text>
                       <Text style={styles.serviceNameText}>{item.service.name}</Text>
                     </View>
                     <Badge status={item.status} />

@@ -15,7 +15,7 @@ import { Button } from "../../components/ui/Button";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../features/auth/store";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -81,16 +81,12 @@ export default function WelcomeScreen() {
     ]).start();
   }, []);
 
-  const handleGoogleSignIn = () => {
-    console.log("Initiating Google Auth Pipeline...");
-  };
-
   const handleEmailSignIn = () => {
     router.push("/(auth)/login");
   };
 
   const handleGuestSkip = () => {
-    setAsGuest(); // Fixes state context out-of-sync bugs
+    setAsGuest();
     router.replace("/(client)");
   };
 
@@ -127,18 +123,25 @@ export default function WelcomeScreen() {
             </Animated.View>
           </View>
 
-          <Text style={styles.editorialHeadline}>
+          <View style={{ paddingHorizontal: theme.spacing.md, marginTop: theme.spacing.lg }}>
+            <Text style={styles.editorialHeadline}>
             Your home services.{"\n"}
             Fixed <Text style={styles.italicText}>fast</Text> with <Text style={styles.brandText}>Karigar</Text>.
           </Text>
+          
           <Text style={styles.subheadline}>
             Connect instantly with verified local technicians across Pakistan for plumbing, electrical work, carpentry, and more.
-          </Text>
+          </Text> 
+          </View>
         </View>
 
         <View style={styles.actionControlsStack}>
-          <Button label="Continue with Google" onPress={handleGoogleSignIn} variant="secondary" style={styles.googleBtn} />
-          <Button label="Continue with Email" onPress={handleEmailSignIn} variant="primary" style={styles.emailBtn} />
+          <Button 
+            label="Get Started" 
+            onPress={handleEmailSignIn} 
+            variant="primary" 
+            style={styles.emailBtn} 
+          />
           <Text onPress={handleGuestSkip} style={styles.skipLink}>Skip for now</Text>
         </View>
       </Animated.View>
@@ -147,24 +150,110 @@ export default function WelcomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeContainer: { flex: 1, backgroundColor: theme.colors.background },
-  bgGradientCircle: { position: "absolute", top: -100, right: -50, width: width * 1.2, height: width * 1.2, borderRadius: (width * 1.2) / 2, backgroundColor: theme.colors.primaryMuted, opacity: 0.35 },
-  editorialHeadline: { fontSize: 32, fontWeight: "700", color: theme.colors.textPrimary, lineHeight: 44, textAlign: "center", letterSpacing: -0.6 },
-  italicText: { fontStyle: "italic", fontWeight: "400", color: theme.colors.textPrimary },
-  brandText: { fontWeight: "800", color: theme.colors.primary },
-  contentContainer: { flex: 1, paddingHorizontal: theme.spacing.xl, justifyContent: "space-between", paddingVertical: theme.spacing.xl, zIndex: 2 },
-  heroSection: { flex: 1, justifyContent: "center", alignItems: "center", marginTop: theme.spacing.xl },
-  brandVisualWrapper: { width: 200, height: 200, justifyContent: "center", alignItems: "center", marginBottom: theme.spacing.xl },
-  logoBadge: { width: 110, height: 110, borderRadius: 55, backgroundColor: theme.colors.primary, justifyContent: "center", alignItems: "center", elevation: 6 },
-  logoText: { color: theme.colors.surface, fontSize: 42, fontWeight: theme.typography.fontWeights.bold },
-  avatarBubble: { position: "absolute", borderRadius: 100, overflow: "hidden", borderWidth: 2, borderColor: theme.colors.surface, backgroundColor: theme.colors.border, zIndex: 5 },
+  safeContainer: { 
+    flex: 1, 
+    backgroundColor: theme.colors.background 
+  },
+  bgGradientCircle: { 
+    position: "absolute", 
+    top: -height * 0.1, 
+    right: -width * 0.15, 
+    width: width * 1.2, 
+    height: width * 1.2, 
+    borderRadius: (width * 1.2) / 2, 
+    backgroundColor: theme.colors.primaryMuted, 
+    opacity: 0.35 
+  },
+  contentContainer: { 
+    flex: 1, 
+    paddingHorizontal: theme.spacing.xl, 
+    justifyContent: "space-between", 
+    paddingVertical: theme.spacing.xl, 
+    zIndex: 2 
+  },
+  heroSection: { 
+    flex: 1, 
+    justifyContent: "center", 
+    alignItems: "center", 
+    marginTop: height > 700 ? theme.spacing.xl : 0 
+  },
+  brandVisualWrapper: { 
+    width: 200, 
+    height: 200, 
+    justifyContent: "center", 
+    alignItems: "center", 
+    marginBottom: height > 700 ? theme.spacing.xl : theme.spacing.md 
+  },
+  logoBadge: { 
+    width: 110, 
+    height: 110, 
+    borderRadius: 55, 
+    backgroundColor: theme.colors.primary, 
+    justifyContent: "center", 
+    alignItems: "center", 
+    elevation: 6,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+  },
+  logoText: { 
+    color: theme.colors.surface, 
+    fontSize: 42, 
+    fontWeight: theme.typography.fontWeights.bold 
+  },
+  avatarBubble: { 
+    position: "absolute", 
+    borderRadius: 100, 
+    overflow: "hidden", 
+    borderWidth: 2, 
+    borderColor: theme.colors.surface, 
+    backgroundColor: theme.colors.border, 
+    zIndex: 5 
+  },
   avatar1: { width: 48, height: 48, top: 15, left: 15 },
   avatar2: { width: 42, height: 42, top: 5, right: 25 },
   avatar3: { width: 38, height: 38, bottom: 35, left: 5 },
   avatarImg: { width: "100%", height: "100%", resizeMode: "cover" },
-  subheadline: { fontSize: theme.typography.fontSizes.md, fontWeight: theme.typography.fontWeights.regular, color: theme.colors.textSecondary, textAlign: "center", lineHeight: theme.typography.lineHeights.relaxed, paddingHorizontal: theme.spacing.sm, marginTop: theme.spacing.md },
-  actionControlsStack: { width: "100%", alignItems: "center", paddingBottom: theme.spacing.sm },
-  googleBtn: { width: "100%", backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.spacing.cardRadius, paddingVertical: theme.spacing.lg, marginBottom: theme.spacing.md, height: 52 },
-  emailBtn: { width: "100%", backgroundColor: theme.colors.textPrimary, borderRadius: theme.spacing.cardRadius, paddingVertical: theme.spacing.lg, marginBottom: theme.spacing.md, height: 52 },
-  skipLink: { fontSize: theme.typography.fontSizes.sm, fontWeight: theme.typography.fontWeights.semibold, color: theme.colors.textSecondary, textDecorationLine: "underline", marginTop: theme.spacing.xs, paddingVertical: theme.spacing.xs },
+  editorialHeadline: { 
+    fontSize: width > 360 ? 32 : 28, 
+    fontWeight: "700", 
+    color: theme.colors.textPrimary, 
+    lineHeight: width > 360 ? 44 : 38, 
+    textAlign: "center", 
+    letterSpacing: -0.6 
+  },
+  italicText: { fontStyle: "italic", fontWeight: "400", color: theme.colors.textPrimary },
+  brandText: { fontWeight: "800", color: theme.colors.primary },
+  subheadline: { 
+    fontSize: theme.typography.fontSizes.md, 
+    fontWeight: theme.typography.fontWeights.regular, 
+    color: theme.colors.textSecondary, 
+    textAlign: "center", 
+    lineHeight: theme.typography.lineHeights.relaxed, 
+    paddingHorizontal: theme.spacing.sm, 
+    marginTop: theme.spacing.md 
+  },
+  actionControlsStack: { 
+    width: "100%", 
+    alignItems: "center", 
+    paddingBottom: theme.spacing.xl,
+    gap: theme.spacing.md
+  },
+  emailBtn: { 
+    width: "100%", 
+    backgroundColor: theme.colors.textPrimary, 
+    borderRadius: theme.spacing.cardRadius, 
+    paddingVertical: theme.spacing.lg, 
+    height: 54,
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  skipLink: { 
+    fontSize: theme.typography.fontSizes.sm, 
+    fontWeight: theme.typography.fontWeights.semibold, 
+    color: theme.colors.textSecondary, 
+    textDecorationLine: "underline", 
+    paddingVertical: theme.spacing.xs 
+  },
 });

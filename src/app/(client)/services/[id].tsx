@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, FlatList, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -7,20 +7,26 @@ import { theme } from "../../../theme";
 import { Card } from "../../../components/ui/Card";
 import { Button } from "../../../components/ui/Button";
 import { apiClient } from "../../../lib/apiClient";
+import { useAuthGuard } from "../../../hooks/useAuthGuard";
 
+// Updated TypeScript interface to handle the new relational backend data schema
 interface ServiceDetails {
   id: number;
   name: string;
-  category: string;
   priceType: string;
+  category: {
+    id: number;
+    name: string;
+    iconName: string;
+  };
 }
 
 export default function ServiceCategoryScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const { executeProtectedAction } = useAuthGuard();
   const serviceId = parseInt(typeof id === "string" ? id : id[0]);
 
-  // Fetch the service classification specifications from the server seeds
   const { data: service, isLoading, error } = useQuery<ServiceDetails>({
     queryKey: ["serviceDetails", serviceId],
     queryFn: async () => {
@@ -47,29 +53,36 @@ export default function ServiceCategoryScreen() {
     );
   }
 
+  const handleBookingTransaction = () => {
+    executeProtectedAction(() => {
+      router.push("/(client)/post-job/details");
+    });
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         
-        {/* Back navigation control */}
         <Button label="← Back to Marketplace" onPress={() => router.back()} variant="ghost" style={styles.backBtn} />
 
         <Card style={styles.bannerCard}>
-          <Text style={styles.categoryTag}>{service.category.toUpperCase()}</Text>
+          {/* Fix: safely drill into the category name string property */}
+          <Text style={styles.categoryTag}>
+            {service.category?.name ? service.category.name.toUpperCase() : "MAINTENANCE"}
+          </Text>
           <Text style={styles.title}>{service.name}</Text>
           <Text style={styles.billingType}>Billing Structure: {service.priceType} RATE</Text>
         </Card>
 
         <Text style={styles.sectionHeader}>Available On-Demand Specialists</Text>
         
-        {/* Fallback layout mapping active operators */}
         <Card style={styles.infoCard}>
           <Text style={styles.infoText}>
             Verified technicians in this sector are ready. Click the button below to publish an active request statement on the network ledger.
           </Text>
           <Button 
             label="📅 Book a Technician Now" 
-            onPress={() => router.push("/(client)/post-job/details")} 
+            onPress={handleBookingTransaction} 
             style={styles.bookBtn}
           />
         </Card>
