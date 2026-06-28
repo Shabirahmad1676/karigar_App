@@ -12,7 +12,6 @@ import { apiClient } from "../../../lib/apiClient";
 interface BidProposal {
   id: number;
   amount: number;
-  status: "PENDING" | "ACCEPTED" | "REJECTED";
   technicianId: number;
   technician?: {
     name: string;
@@ -28,7 +27,7 @@ interface JobDetails {
   status: "PENDING" | "POSTED" | "MATCHED" | "COMPLETED" | "CANCELLED";
   address: string | null;
   imageUrl: string | null;
-  bids?: BidProposal[]; // Reflects bids tracking arrays related to your job entity
+  bids?: BidProposal[];
 }
 
 export default function ClientJobDetailsScreen() {
@@ -49,15 +48,16 @@ export default function ClientJobDetailsScreen() {
 
   // 2. Setup the transaction mutation target pointing directly to acceptBid
   const acceptBidMutation = useMutation({
-    mutationFn: async (bidId: number) => {
-      return await apiClient.post(`/bids/${jobId}/accept/${bidId}`);
-    },
+   mutationFn: async (bidId: number) => {
+  return await apiClient.post(`/jobs/bids/${jobId}/accept/${bidId}`);
+},
     onSuccess: () => {
       Alert.alert("Success", "Bid accepted successfully! The assignment is finalized.");
       queryClient.invalidateQueries({ queryKey: ["jobDetails", jobId] });
       queryClient.invalidateQueries({ queryKey: ["myBookings"] });
     },
     onError: (err: any) => {
+          // console.error("❌ CRASH INSIDE ACCEPT_BID:", err);
       Alert.alert("Transaction Failed", err.response?.data?.message || "Internal server processing failure.");
     },
   });
@@ -81,7 +81,7 @@ export default function ClientJobDetailsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
         {/* Navigation Action Row */}
         <Button label="← Back to Bookings Ledger" onPress={() => router.back()} variant="ghost" style={styles.backBtn} />
@@ -112,13 +112,16 @@ export default function ClientJobDetailsScreen() {
           job.bids.map((bid) => (
             <Card key={bid.id} style={styles.bidCard}>
               <View style={styles.bidInfo}>
-                <Text style={styles.techName}>Technician Profile #{bid.technicianId}</Text>
-                <Text style={styles.bidPrice}>Quoted Rate: <Text style={styles.successText}>Rs. {bid.amount}</Text></Text>
-                <Text style={styles.bidStatus}>Status Pipeline: {bid.status}</Text>
+                <Text style={styles.techName}>
+                  👤 {bid.technician?.name || `Technician Operator #${bid.technicianId}`}
+                </Text>
+                <Text style={styles.bidPrice}>
+                  Quoted Rate: <Text style={styles.successText}>Rs. {bid.amount.toLocaleString("en-PK")}</Text>
+                </Text>
               </View>
 
-              {/* Only reveal transactional accept buttons if the root job posting state is PENDING */}
-              {job.status === "PENDING" && bid.status === "PENDING" && (
+              {/* Reveal hire buttons if the root job posting state is PENDING */}
+              {job.status === "PENDING" && (
                 <Button 
                   label="Accept Hire" 
                   onPress={() => acceptBidMutation.mutate(bid.id)}
@@ -156,7 +159,6 @@ const styles = StyleSheet.create({
   techName: { fontSize: 14, fontWeight: "700", color: theme.colors.textPrimary },
   bidPrice: { fontSize: 13, color: theme.colors.textSecondary },
   successText: { color: theme.colors.success, fontWeight: "700" },
-  bidStatus: { fontSize: 11, fontWeight: "600", color: theme.colors.primary, textTransform: "uppercase", marginTop: 2 },
   acceptBtn: { height: 40, paddingHorizontal: 16 },
   errorText: { color: theme.colors.danger, textAlign: "center" }
 });

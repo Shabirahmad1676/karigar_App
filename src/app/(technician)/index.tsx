@@ -38,9 +38,9 @@ export default function TechnicianDashboard() {
   });
 
   const placeBidMutation = useMutation({
-    mutationFn: async ({ jobId, amount }: { jobId: number; amount: number }) => {
-      return await apiClient.post(`/bids/${jobId}`, { amount });
-    },
+  mutationFn: async ({ jobId, amount }: { jobId: number; amount: number }) => {
+    return await apiClient.post(`/technicians/bids/${jobId}`, { amount });
+  },
     onSuccess: () => {
       Alert.alert("Bid Transmitted", "Your professional quote has been safely broadcast to the client.");
       queryClient.invalidateQueries({ queryKey: ["availableJobs"] });

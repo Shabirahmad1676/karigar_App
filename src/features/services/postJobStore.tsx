@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState } from "react";
 export interface JobFormData {
   title: string;
   description: string;
+  budget: string;
   serviceId: number | null;
   latitude: number | null;
   longitude: number | null;
@@ -22,6 +23,7 @@ export const JobStoreProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [formData, setFormData] = useState<JobFormData>({
     title: "",
     description: "",
+    budget:"",
     serviceId: null,
     latitude: null,
     longitude: null,
@@ -34,7 +36,7 @@ export const JobStoreProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const clearForm = () => {
-    setFormData({ title: "", description: "", serviceId: null, latitude: null, longitude: null, address: "", localImageUri: null });
+    setFormData({ title: "", budget:"", description: "", serviceId: null, latitude: null, longitude: null, address: "", localImageUri: null });
   };
 
   return (

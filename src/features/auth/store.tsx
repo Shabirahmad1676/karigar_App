@@ -39,8 +39,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const bootstrapAsync = async () => {
       try {
         const storedToken = await SecureStore.getItemAsync("authToken");
-        if (storedToken) {
+        const storedUser = await SecureStore.getItemAsync("authUser"); 
+        if (storedToken && storedUser) {
           setToken(storedToken);
+          setUser(JSON.parse(storedUser));
           setIsGuest(false);
           
           // Asynchronously attempt to decode/fetch active user details from server targets
@@ -65,6 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (newToken: string, newUser: User) => {
     await SecureStore.setItemAsync("authToken", newToken);
+    await SecureStore.setItemAsync("authUser", JSON.stringify(newUser)); 
     setToken(newToken);
     setUser(newUser);
     setIsGuest(false);
@@ -76,6 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     await SecureStore.deleteItemAsync("authToken");
+    await SecureStore.deleteItemAsync("authUser");
     setToken(null);
     setUser(null);
     setIsGuest(true);

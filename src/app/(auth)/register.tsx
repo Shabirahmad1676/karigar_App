@@ -153,7 +153,7 @@ export default function RegisterScreen() {
           )} */}
 
           {/* Dynamic Registration Trigger Action button */}
-          {/* <Button label="Create Account" onPress={handleRegister} loading={loading} style={styles.submitBtn} /> */}
+          <Button label="Create Account" onPress={handleRegister} loading={loading} style={styles.submitBtn} />
 
           {/* Conditional Layout Injection: Renders social shortcuts strictly for Client registration targets */}
           {role === "CLIENT" && (
