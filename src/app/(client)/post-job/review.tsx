@@ -25,7 +25,7 @@ export default function ReviewStep() {
       const jobPayload = {
         title: formData.title,
         description: formData.description,
-        budget: 1500, 
+        budget: parseInt(formData.budget || "1000"),
         serviceId: Number(formData.serviceId),
         latitude: formData.latitude,
         longitude: formData.longitude,

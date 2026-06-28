@@ -55,6 +55,14 @@ export default function DetailsStep() {
         />
 
         <Input
+  label="Estimated Working Budget Target (PKR)"
+  placeholder="e.g. 2500"
+  value={formData.budget}
+  onChangeText={(text) => updateFields({ budget: text.replace(/[^0-9]/g, "") })} // Enforce pure numerical entry
+  keyboardType="numeric"
+/>
+
+        <Input
           label="Detailed Problem Statement Description"
           placeholder="Describe exactly what needs fixing..."
           value={formData.description}
