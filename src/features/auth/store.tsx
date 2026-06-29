@@ -12,6 +12,8 @@ interface User {
   phone?: string;
   verificationStatus?: string
   isVerified?: boolean;
+  isWorking?: boolean;
+  tier?: "FREE" | "PREMIUM";
 }
 
 interface AuthContextType {

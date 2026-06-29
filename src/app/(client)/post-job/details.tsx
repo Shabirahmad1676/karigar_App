@@ -8,22 +8,20 @@ import { Button } from "../../../components/ui/Button";
 import { useJobFormStore } from "../../../features/services/postJobStore";
 import { useAuthGuard } from "../../../hooks/useAuthGuard";
 import { apiClient } from "../../../lib/apiClient";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import {SafeAreaView} from "react-native-safe-area-context";
 export default function DetailsStep() {
   const router = useRouter();
   const { executeProtectedAction } = useAuthGuard();
   const { formData, updateFields } = useJobFormStore();
   const [errorMsg, setErrorMsg] = useState("");
 
-  // Prompt 4 / 9 Enforce authentication barrier verification right on screen entry
   useEffect(() => {
     executeProtectedAction(() => {
       console.log("Client permissions verified successfully");
     });
   }, []);
 
-  // Fetch true valid service IDs directly from server seeds
   const { data: services } = useQuery({
     queryKey: ["services"],
     queryFn: async () => {
@@ -33,8 +31,13 @@ export default function DetailsStep() {
   });
 
   const handleNext = () => {
-    if (!formData.title || !formData.description || !formData.serviceId) {
+    // 📦 Validation expanded to enforce budget criteria
+    if (!formData.title || !formData.description || !formData.budget || !formData.serviceId) {
       setErrorMsg("Please populate all parameters prior to advancing step workflows.");
+      return;
+    }
+    if (parseInt(formData.budget) <= 0) {
+      setErrorMsg("Budget target must be a positive number.");
       return;
     }
     setErrorMsg("");
@@ -43,7 +46,7 @@ export default function DetailsStep() {
 
   return (
     <SafeAreaView style={styles.safeContainer}>
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <Text style={styles.stepIndicator}>Step 1 of 4</Text>
         <Text style={styles.title}>Project Scope Context</Text>
 
@@ -55,14 +58,6 @@ export default function DetailsStep() {
         />
 
         <Input
-  label="Estimated Working Budget Target (PKR)"
-  placeholder="e.g. 2500"
-  value={formData.budget}
-  onChangeText={(text) => updateFields({ budget: text.replace(/[^0-9]/g, "") })} // Enforce pure numerical entry
-  keyboardType="numeric"
-/>
-
-        <Input
           label="Detailed Problem Statement Description"
           placeholder="Describe exactly what needs fixing..."
           value={formData.description}
@@ -72,7 +67,15 @@ export default function DetailsStep() {
           style={{ height: 100, paddingTop: 10 }}
         />
 
-        {/* Custom Service Selector Grid Elements */}
+        {/* 📦 NEW FINANCIAL ENTRY FIELD */}
+        <Input
+          label="Estimated Working Budget Target (Rs.)"
+          placeholder="e.g. 2500"
+          value={formData.budget}
+          onChangeText={(text) => updateFields({ budget: text.replace(/[^0-9]/g, "") })} // Pure digit filter
+          keyboardType="numeric"
+        />
+
         <Text style={styles.label}>Select Service Classification</Text>
         <View style={styles.pickerGrid}>
           {services?.map((svc: any) => (
