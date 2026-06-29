@@ -14,8 +14,7 @@ export default function ReviewStep() {
   const [submitting, setSubmitting] = useState(false);
 
   const handleFinalSubmission = async () => {
-    // Safety check: Prevent network calls if data fields are missing
-    if (!formData.title || !formData.description || !formData.serviceId) {
+    if (!formData.title || !formData.description || !formData.budget || !formData.serviceId) {
       Alert.alert("Missing Data", "Your job post details appear to be empty. Please go back and fill out the form steps.");
       return;
     }
@@ -25,7 +24,7 @@ export default function ReviewStep() {
       const jobPayload = {
         title: formData.title,
         description: formData.description,
-        budget: parseInt(formData.budget || "1000"),
+        budget: parseInt(formData.budget), // 👈 📦 Parses dynamic user input text field perfectly
         serviceId: Number(formData.serviceId),
         latitude: formData.latitude,
         longitude: formData.longitude,
@@ -53,7 +52,7 @@ export default function ReviewStep() {
           text: "View My Ledger",
           onPress: () => {
             clearForm();
-            router.replace("/(client)");
+            router.replace("/(client)/bookings");
           },
         },
       ]);
@@ -80,6 +79,10 @@ export default function ReviewStep() {
           <Text style={styles.reviewText}>
             <Text style={styles.boldLabel}>Context: </Text>
             {formData.description || "Wiped/Missing"}
+          </Text>
+          <Text style={styles.reviewText}>
+            <Text style={styles.boldLabel}>Target Quote Budget: </Text>
+            Rs. {parseInt(formData.budget || "0").toLocaleString("en-PK")}
           </Text>
 
           <View style={styles.divider} />

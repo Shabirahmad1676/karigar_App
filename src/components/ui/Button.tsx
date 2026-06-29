@@ -1,5 +1,5 @@
 import React from "react";
-import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, ViewStyle, TextStyle } from "react-native";
+import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, ViewStyle, StyleProp } from "react-native"; // 👈 Imported StyleProp
 import { theme } from "../../theme";
 
 interface ButtonProps {
@@ -8,7 +8,7 @@ interface ButtonProps {
   variant?: "primary" | "secondary" | "ghost";
   loading?: boolean;
   disabled?: boolean;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>; // 👈 UPGRADED: Now safely supports compound style composition blocks
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -22,13 +22,14 @@ export const Button: React.FC<ButtonProps> = ({
   const isPrimary = variant === "primary";
   const isSecondary = variant === "secondary";
 
+  // Flat array composition mapping that matches native framework properties cleanly
   const buttonStyles = [
     styles.baseButton,
     isPrimary && styles.primary,
     isSecondary && styles.secondary,
     variant === "ghost" && styles.ghost,
     (disabled || loading) && styles.disabled,
-    style,
+    style, // React Native handles array unfolding under StyleProp definitions safely
   ];
 
   const textStyles = [

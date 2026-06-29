@@ -25,6 +25,12 @@ export default function TechnicianTabsLayout() {
           ),
         }}
       />
+
+      <Tabs.Screen
+        name="history"
+        options={{ title: "History", tabBarLabel: "Ledger History",
+           tabBarIcon: ({ color, size }) => (  <Ionicon name="time-outline" size={size ?? 24} color={color} /> ) }}
+           />
       {/* 2. Technician Professional Profile & Dissemination Logs */}
       <Tabs.Screen
         name="profile"
