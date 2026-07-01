@@ -91,26 +91,33 @@ export default function LocationStep() {
   return (
     <SafeAreaView style={styles.safeContainer}>
       <View style={styles.container}>
-        <Text style={styles.stepIndicator}>Step 2 of 4</Text>
+        <View style={styles.progressHeader}>
+          <Text style={styles.stepIndicator}>Step 2 of 4</Text>
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: "50%" }]} />
+          </View>
+        </View>
         <Text style={styles.title}>Deployment Target Coordinates</Text>
 
-        <TouchableOpacity 
-          style={[styles.gpsButton, formData.latitude ? styles.gpsSuccess : null]} 
+        <TouchableOpacity
+          style={[styles.gpsButton, formData.latitude ? styles.gpsSuccess : null]}
           onPress={requestLiveCoordinates}
           disabled={loadingGPS}
-          activeOpacity={0.8}
+          activeOpacity={0.7}
         >
           {loadingGPS ? (
             <ActivityIndicator color={theme.colors.primary} />
           ) : (
             <>
-              <Ionicon 
-                name={formData.latitude ? "location" : "location-outline"} 
-                size={24} 
-                color={formData.latitude ? theme.colors.success : theme.colors.primary} 
-              />
+              <View style={[styles.gpsIconCircle, formData.latitude ? styles.gpsIconCircleSuccess : null]}>
+                <Ionicon
+                  name={formData.latitude ? "location" : "location-outline"}
+                  size={20}
+                  color={formData.latitude ? theme.colors.success : theme.colors.primary}
+                />
+              </View>
               <Text style={[styles.gpsButtonText, formData.latitude ? styles.textSuccess : null]}>
-                {formData.latitude ? "✓ GPS Coordinates Synchronized" : "📍 Capture My Real-Time Location"}
+                {formData.latitude ? "GPS Coordinates Synchronized" : "Capture My Real-Time Location"}
               </Text>
             </>
           )}
@@ -118,10 +125,15 @@ export default function LocationStep() {
 
         {formData.latitude ? (
           <View style={styles.coordinatesDisplayCard}>
-            <Text style={styles.coordLabel}>LATITUDE:</Text>
-            <Text style={styles.coordValue}>{formData.latitude.toFixed(6)}</Text>
-            <Text style={styles.coordLabel}>LONGITUDE:</Text>
-            <Text style={styles.coordValue}>{formData.longitude.toFixed(6)}</Text>
+            <View style={styles.coordItem}>
+              <Text style={styles.coordLabel}>LATITUDE</Text>
+              <Text style={styles.coordValue}>{formData.latitude.toFixed(6)}</Text>
+            </View>
+            <View style={styles.coordDivider} />
+            <View style={styles.coordItem}>
+              <Text style={styles.coordLabel}>LONGITUDE</Text>
+              <Text style={styles.coordValue}>{formData.longitude.toFixed(6)}</Text>
+            </View>
           </View>
         ) : null}
 
@@ -142,16 +154,106 @@ export default function LocationStep() {
 }
 
 const styles = StyleSheet.create({
-  safeContainer: { flex: 1, backgroundColor: theme.colors.background },
-  container: { padding: theme.spacing.xl, flex: 1 },
-  stepIndicator: { fontSize: 12, fontWeight: "bold", color: theme.colors.primary, letterSpacing: 1 },
-  title: { fontSize: 24, fontWeight: "bold", color: theme.colors.textPrimary, marginBottom: theme.spacing.xl, marginTop: theme.spacing.xs },
-  gpsButton: { height: 60, borderRadius: 12, borderWidth: 2, borderColor: theme.colors.primary, borderStyle: "dashed", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: theme.spacing.xl, backgroundColor: theme.colors.primaryMuted },
-  gpsSuccess: { borderColor: theme.colors.success, backgroundColor: "#DCFCE7", borderStyle: "solid" },
-  gpsButtonText: { fontSize: 15, fontWeight: "700", color: theme.colors.primary },
-  textSuccess: { color: theme.colors.success },
-  coordinatesDisplayCard: { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 12, padding: theme.spacing.md, marginBottom: theme.spacing.xl, flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
-  coordLabel: { fontSize: 11, fontWeight: "700", color: theme.colors.textSecondary, width: "35%", marginBottom: 4 },
-  coordValue: { fontSize: 13, fontFamily: "monospace", fontWeight: "700", color: theme.colors.textPrimary, width: "65%", marginBottom: 4 },
-  buttonRow: { flexDirection: "row", gap: 15, marginTop: "auto" }
+  safeContainer: { flex: 1, backgroundColor: "#FFFFFF" },
+  container: { padding: 24, flex: 1 },
+
+  progressHeader: { marginBottom: 8 },
+  stepIndicator: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: theme.colors.primary,
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+    marginBottom: 8,
+  },
+  progressTrack: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#F1F5F9",
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: theme.colors.primary,
+  },
+
+  title: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#0F172A",
+    marginBottom: 24,
+    marginTop: 12,
+  },
+
+  gpsButton: {
+    height: 64,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    borderStyle: "dashed",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    marginBottom: 16,
+    backgroundColor: "#F8FAFC",
+  },
+  gpsSuccess: {
+    borderColor: "#BBF7D0",
+    backgroundColor: "#F0FDF4",
+    borderStyle: "solid",
+  },
+  gpsIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: theme.colors.primaryMuted,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  gpsIconCircleSuccess: {
+    backgroundColor: "#DCFCE7",
+  },
+  gpsButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: theme.colors.primary,
+  },
+  textSuccess: {
+    color: theme.colors.success,
+  },
+
+  coordinatesDisplayCard: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#F1F5F9",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  coordItem: { flex: 1 },
+  coordDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: "#F1F5F9",
+    marginHorizontal: 16,
+  },
+  coordLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#94A3B8",
+    letterSpacing: 0.4,
+    marginBottom: 4,
+  },
+  coordValue: {
+    fontSize: 14,
+    fontFamily: "monospace",
+    fontWeight: "600",
+    color: "#0F172A",
+  },
+
+  buttonRow: { flexDirection: "row", gap: 12, marginTop: "auto" },
 });

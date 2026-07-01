@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert, TextInput, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert, TextInput, TouchableOpacity, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { theme } from "../../theme";
@@ -16,6 +16,7 @@ interface AvailableJob {
   description: string;
   budget: number;
   address: string | null;
+  status: "PENDING" | "MATCHED" | "ARRIVED" | "COMPLETED";
   createdAt: string;
   service: {
     id: number;
@@ -28,37 +29,34 @@ export default function TechnicianDashboard() {
   const queryClient = useQueryClient();
   const router = useRouter();
   const [bidAmount, setBidAmount] = useState<{ [key: number]: string }>({});
+  const [loadingAction, setLoadingAction] = useState(false);
+
+  // 1. Live state query to dynamically fetch active assignments
+  const { data: activeJob, refetch: refetchActiveJob } = useQuery<AvailableJob | null>({
+    queryKey: ["techActiveJob"],
+    queryFn: async () => {
+      const response = await apiClient.get("/jobs/my");
+      const runningJob = response.data.find((j: any) => j.status === "MATCHED" || j.status === "ARRIVED");
+      return runningJob || null;
+    }
+  });
 
   useEffect(() => {
-  // 1. Listen for newly broadcasted client jobs across the marketplace
-  socket.on("new_job_available", () => {
-    console.log("🔔 Real-time sync: Fetching new unassigned job listings...");
-    queryClient.invalidateQueries({ queryKey: ["availableJobs"] });
-  });
+    socket.on("new_job_available", () => {
+      queryClient.invalidateQueries({ queryKey: ["availableJobs"] });
+    });
 
-  // 2. Listen for custom private bid acceptance hiring notifications
-  socket.on("bid_accepted", (data: { jobId: number; bidId: number }) => {
-    Alert.alert(
-      "🎉 Booking Matched!",
-      "A client has accepted your quote. Open your active dispatch profile panel to coordinate street arrival details.",
-      [
-        {
-          text: "View My Engagement Ledger",
-          onPress: () => {
-            queryClient.invalidateQueries({ queryKey: ["availableJobs"] });
-            router.push("/(technician)/profile");
-          }
-        }
-      ]
-    );
-  });
+    socket.on("bid_accepted", () => {
+      // Refresh queries immediately when a bid is accepted
+      queryClient.invalidateQueries({ queryKey: ["availableJobs"] });
+      refetchActiveJob();
+    });
 
-  // Clean up listeners when the screen unmounts to prevent memory leaks
-  return () => {
-    socket.off("new_job_available");
-    socket.off("bid_accepted");
-  };
-}, []);
+    return () => {
+      socket.off("new_job_available");
+      socket.off("bid_accepted");
+    };
+  }, []);
 
   const { data: jobs, isLoading, error, refetch, isRefetching } = useQuery<AvailableJob[]>({
     queryKey: ["availableJobs"],
@@ -66,6 +64,7 @@ export default function TechnicianDashboard() {
       const response = await apiClient.get("/jobs/available"); 
       return response.data;
     },
+    enabled: !activeJob // Stop polling the marketplace board if the worker is busy on a job site
   });
 
   const placeBidMutation = useMutation({
@@ -77,8 +76,7 @@ export default function TechnicianDashboard() {
       queryClient.invalidateQueries({ queryKey: ["availableJobs"] });
     },
     onError: (err: any) => {
-      console.log("CRITICAL BACKEND RESPONSE OBJECT:", err.response?.data);
-      const serverErrorMessage = err.response?.data?.error || err.response?.data?.message || "Unable to complete request payload verification.";
+      const serverErrorMessage = err.response?.data?.error || err.response?.data?.message || "Unable to complete request.";
       Alert.alert("Bidding Restricted", serverErrorMessage);
     },
   });
@@ -86,82 +84,109 @@ export default function TechnicianDashboard() {
   const handleBidSubmit = (jobId: number) => {
     const amount = parseInt(bidAmount[jobId] || "");
     if (!amount || amount <= 0) {
-      Alert.alert("Invalid Rate", "Please input a valid target amount in PKR to place your proposal.");
+      Alert.alert("Invalid Rate", "Please input a valid target amount in PKR.");
       return;
     }
     placeBidMutation.mutate({ jobId, amount });
   };
 
+  const trackArrival = async () => {
+    if (!activeJob) return;
+    setLoadingAction(true);
+    try {
+      await apiClient.post(`/technicians/jobs/${activeJob.id}/arrive`);
+      Alert.alert("Arrival Logged", "The client has been notified that you have arrived.");
+      refetchActiveJob();
+    } catch (err: any) {
+      Alert.alert("Sync Failure", err.response?.data?.message || "Network error.");
+    } finally { setLoadingAction(false); }
+  };
+
+  const trackCompletion = async () => {
+    if (!activeJob) return;
+    setLoadingAction(true);
+    try {
+      await apiClient.post(`/technicians/jobs/${activeJob.id}/complete`);
+      Alert.alert("Success!", "Job completed. Your account is now open for new listings.");
+      
+      // Invalidate the history cache row so history.tsx updates instantly
+      queryClient.invalidateQueries({ queryKey: ["technicianJobHistory"] });
+      queryClient.invalidateQueries({ queryKey: ["availableJobs"] });
+      
+      refetchActiveJob();
+    } catch (err: any) {
+      Alert.alert("Sync Failure", err.response?.data?.message || "Network error.");
+    } finally { setLoadingAction(false); }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.headerTopRow}>
-          <View>
-            <Text style={styles.title}>Karigar Board</Text>
-            <Text style={styles.subtitle}>Live unassigned marketplace requests</Text>
-          </View>
-          <TouchableOpacity style={styles.profileTriggerBtn} onPress={() => router.push("/(technician)/profile")} activeOpacity={0.8}>
-            <Ionicon name="person-circle-outline" size={28} color={theme.colors.primary} />
-          </TouchableOpacity>
-        </View>
+        <Text style={styles.title}>{activeJob ? "Active Dispatch" : "Karigar Board"}</Text>
+        <Text style={styles.subtitle}>
+          {activeJob ? "Your current on-site assignment details" : "Live unassigned marketplace requests"}
+        </Text>
       </View>
 
-      {isLoading ? (
+      {/* CONDITIONAL BRANCH: If a technician is hired, hide the board and lock their view to the active task card */}
+      {activeJob ? (
+        <ScrollView contentContainerStyle={styles.activeJobContainer}>
+          <Card style={styles.dispatchJobCard}>
+            <View style={styles.dispatchHeader}>
+              <View style={styles.pulseDot} />
+              <Text style={styles.dispatchTitle}>IN-PROGRESS DISPATCH WORK</Text>
+            </View>
+            <Text style={styles.jobTitleText}>{activeJob.title}</Text>
+            <Text style={styles.jobAddressText}>📍 {activeJob.address || "Mardan Sector"}</Text>
+            <Text style={styles.jobPayText}>Payout Target: <Text style={styles.greenText}>Rs. {activeJob.budget}</Text></Text>
+            
+            <View style={styles.miniDivider} />
+
+            {loadingAction ? (
+              <ActivityIndicator color={theme.colors.primary} style={{ marginVertical: 8 }} />
+            ) : activeJob.status === "MATCHED" ? (
+              <Button label="📍 Log Arrival At Client Address" onPress={trackArrival} style={styles.arriveBtn} />
+            ) : (
+              <Button label="✅ Mark Job As Completed Successfully" onPress={trackCompletion} style={styles.completeBtn} />
+            )}
+          </Card>
+        </ScrollView>
+      ) : isLoading ? (
         <View style={styles.centeredContainer}><ActivityIndicator size="large" color={theme.colors.primary} /></View>
-      ) : error ? (
-        <View style={styles.centeredContainer}>
-          <Ionicon name="cloud-offline-outline" size={48} color={theme.colors.textSecondary} />
-          <Text style={styles.errorTitle}>Sync Connection Lost</Text>
-          <Button label="Retry Sync Loop" onPress={() => refetch()} variant="primary" style={styles.retryBtn} />
-        </View>
       ) : jobs && jobs.length === 0 ? (
         <View style={styles.centeredContainer}>
-          <View style={styles.emptyIconCircle}><Ionicon name="briefcase-outline" size={32} color={theme.colors.textSecondary} /></View>
           <Text style={styles.errorTitle}>Marketplace is Quiet</Text>
-          <Text style={styles.errorSubtitle}>All incoming client bookings have been assigned. Pull down to refresh live streams.</Text>
+          <Text style={styles.errorSubtitle}>All incoming bookings have been assigned. Pull down to refresh.</Text>
         </View>
       ) : (
         <FlatList
           data={jobs}
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
           refreshing={isRefetching}
           onRefresh={refetch}
           renderItem={({ item }) => (
             <Card style={styles.jobCard}>
               <View style={styles.cardHeader}>
-                <View style={styles.tagWrapper}>
-                  <Text style={styles.categoryTag}>{item.service?.category?.name || "General"}</Text>
-                  <Text style={styles.serviceSubTag}>{item.service?.name}</Text>
-                </View>
+                <Text style={styles.categoryTag}>{item.service?.category?.name || "General"}</Text>
                 <Text style={styles.jobIdBadge}>#JOB-{item.id}</Text>
               </View>
               <Text style={styles.jobTitle}>{item.title}</Text>
               <Text style={styles.desc} numberOfLines={3}>{item.description}</Text>
-              
-              <View style={styles.locationContainer}>
-                <Ionicon name="location-outline" size={16} color={theme.colors.textSecondary} style={{ marginRight: 4 }} />
-                <Text style={styles.locationText} numberOfLines={1}>{item.address || "Mardan Operational Area"}</Text>
-              </View>
+              <Text style={styles.locationText}>📍 {item.address || "Mardan Operational Area"}</Text>
               <View style={styles.divider} />
               <View style={styles.actionWrapper}>
-                <View style={styles.budgetDisplayStack}>
-                  <Text style={styles.budgetLabel}>CLIENT BUDGET</Text>
-                  <Text style={styles.budgetAmount}>Rs. {item.budget.toLocaleString("en-PK")}</Text>
-                </View>
+                <Text style={styles.budgetAmount}>Rs. {item.budget.toLocaleString("en-PK")}</Text>
                 <View style={styles.inputInteractiveRow}>
                   <TextInput
                     style={styles.premiumInput}
-                    placeholder="Your Offer (Rs.)"
-                    placeholderTextColor="#9ca3af"
+                    placeholder="Offer (Rs.)"
                     value={bidAmount[item.id] || ""}
                     onChangeText={(text) => setBidAmount({ ...bidAmount, [item.id]: text })}
                     keyboardType="numeric"
                   />
-                  <TouchableOpacity style={styles.premiumSendBtn} onPress={() => handleBidSubmit(item.id)} activeOpacity={0.85}>
+                  <TouchableOpacity style={styles.premiumSendBtn} onPress={() => handleBidSubmit(item.id)}>
                     <Text style={styles.sendBtnText}>Bid</Text>
-                    <Ionicon name="chevron-forward" size={14} color="#FFF" />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -176,33 +201,36 @@ export default function TechnicianDashboard() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f8fafc" },
   header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 20, backgroundColor: "#FFF", borderBottomWidth: 1, borderBottomColor: "#e2e8f0" },
-  headerTopRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  title: { fontSize: 24, fontWeight: "800", color: "#0f172a", letterSpacing: -0.5 },
+  title: { fontSize: 24, fontWeight: "800", color: "#0f172a" },
   subtitle: { fontSize: 13, color: "#64748b", marginTop: 2 },
-  profileTriggerBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: "#f1f5f9", justifyContent: "center", alignItems: "center" },
+  activeJobContainer: { padding: 16 },
+  dispatchJobCard: { padding: 20, borderColor: "#cbd5e1", borderLeftWidth: 5, borderLeftColor: theme.colors.primary, backgroundColor: "#FFF", borderRadius: 16 },
+  dispatchHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 12 },
+  pulseDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#EF4444" },
+  dispatchTitle: { fontSize: 11, fontWeight: "800", color: "#EF4444", letterSpacing: 0.8 },
+  jobTitleText: { fontSize: 18, fontWeight: "700", color: "#0f172a", marginBottom: 6 },
+  jobAddressText: { fontSize: 14, fontWeight: "500", color: "#475569", marginBottom: 6 },
+  jobPayText: { fontSize: 14, color: "#64748b" },
+  greenText: { fontWeight: "800", color: "#10b981" },
+  miniDivider: { height: 1, backgroundColor: "#f1f5f9", marginVertical: 16 },
+  arriveBtn: { height: 48, backgroundColor: theme.colors.primary, borderRadius: 10 },
+  completeBtn: { height: 48, backgroundColor: "#10b981", borderRadius: 10 },
   centeredContainer: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 40 },
-  emptyIconCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: "#f1f5f9", justifyContent: "center", alignItems: "center", marginBottom: 16 },
-  errorTitle: { fontSize: 18, fontWeight: "700", color: "#1e293b", marginBottom: 6, textAlign: "center" },
-  errorSubtitle: { fontSize: 14, color: "#64748b", textAlign: "center", lineHeight: 20 },
-  retryBtn: { marginTop: 20, width: 160, height: 44, borderRadius: 8 },
-  list: { padding: 16, paddingBottom: 32 },
-  jobCard: { backgroundColor: "#FFF", borderRadius: 16, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: "#e2e8f0" },
-  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  tagWrapper: { flexDirection: "row", alignItems: "center", flex: 1, paddingRight: 8 },
-  categoryTag: { fontSize: 11, fontWeight: "800", color: theme.colors.primary, textTransform: "uppercase", letterSpacing: 0.5 },
-  serviceSubTag: { fontSize: 12, fontWeight: "600", color: "#64748b", marginLeft: 4 },
-  jobIdBadge: { fontSize: 11, fontFamily: "monospace", fontWeight: "700", color: "#94a3b8", backgroundColor: "#f8fafc", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  errorTitle: { fontSize: 18, fontWeight: "700", color: "#1e293b", marginBottom: 6 },
+  errorSubtitle: { fontSize: 14, color: "#64748b", textAlign: "center" },
+  list: { padding: 16 },
+  jobCard: { backgroundColor: "#FFF", borderRadius: 16, padding: 20, marginBottom: 16 },
+  cardHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 12 },
+  categoryTag: { fontSize: 11, fontWeight: "800", color: theme.colors.primary, textTransform: "uppercase" },
+  jobIdBadge: { fontSize: 11, fontFamily: "monospace", color: "#94a3b8" },
   jobTitle: { fontSize: 18, fontWeight: "700", color: "#0f172a", marginBottom: 6 },
-  desc: { fontSize: 14, color: "#475569", lineHeight: 20, marginBottom: 14 },
-  locationContainer: { flexDirection: "row", alignItems: "center", marginBottom: 4 },
-  locationText: { fontSize: 13, fontWeight: "500", color: "#64748b" },
+  desc: { fontSize: 14, color: "#475569", marginBottom: 12 },
+  locationText: { fontSize: 13, color: "#64748b", fontWeight: "500" },
   divider: { height: 1, backgroundColor: "#f1f5f9", marginVertical: 16 },
-  actionWrapper: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 12 },
-  budgetDisplayStack: { flexDirection: "column" },
-  budgetLabel: { fontSize: 9, fontWeight: "700", color: "#94a3b8", letterSpacing: 0.5, marginBottom: 2 },
+  actionWrapper: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   budgetAmount: { fontSize: 16, fontWeight: "800", color: "#10b981" },
-  inputInteractiveRow: { flexDirection: "row", alignItems: "center", flex: 1, maxWidth: "65%", gap: 8 },
-  premiumInput: { flex: 1, height: 44, backgroundColor: "#f8fafc", borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 10, paddingHorizontal: 12, fontSize: 14, fontWeight: "600", color: "#1e293b" },
-  premiumSendBtn: { height: 44, backgroundColor: theme.colors.primary, flexDirection: "row", alignItems: "center", justifyContent: "center", paddingHorizontal: 16, borderRadius: 10, gap: 4 },
-  sendBtnText: { color: "#FFF", fontSize: 14, fontWeight: "700" }
+  inputInteractiveRow: { flexDirection: "row", flex: 1, maxWidth: "65%", gap: 8 },
+  premiumInput: { flex: 1, height: 44, backgroundColor: "#f8fafc", borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 10, paddingHorizontal: 12 },
+  premiumSendBtn: { height: 44, backgroundColor: theme.colors.primary, paddingHorizontal: 16, borderRadius: 10, justifyContent: "center" },
+  sendBtnText: { color: "#FFF", fontWeight: "700" }
 });

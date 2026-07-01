@@ -1,11 +1,11 @@
 import React, { useEffect, useRef } from "react";
 import { View, Text, StyleSheet, Animated } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useAuth } from "../../features/auth/store";
-import { Card } from "../../components/ui/Card";
-import { Avatar } from "../../components/ui/Avatar";
-import { Button } from "../../components/ui/Button";
-import { theme } from "../../theme";
+import { useAuth } from "../../../features/auth/store";
+import { Card } from "../../../components/ui/Card";
+import { Avatar } from "../../../components/ui/Avatar";
+import { Button } from "../../../components/ui/Button";
+import { theme } from "../../../theme";
 import { useRouter } from "expo-router";
 import Icon from "@react-native-vector-icons/ionicons";
 

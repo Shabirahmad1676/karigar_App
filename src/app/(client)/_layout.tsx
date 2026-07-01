@@ -1,90 +1,23 @@
-import { Tabs } from "expo-router";
-import { theme } from "../../theme";
-import { StyleSheet } from "react-native";
-import Icon from "@react-native-vector-icons/ionicons"; // Fixed uniform default vector import alignment
+import React from "react";
+import { Stack } from "expo-router";
+import { JobStoreProvider } from "../../features/services/postJobStore";
 
-export default function ClientTabsLayout() {
+export default function ClientGroupRootLayout() {
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: theme.colors.textSecondary,
-        tabBarStyle: styles.tabBar,
-        tabBarLabelStyle: styles.tabBarLabel,
-      }}
-    >
-      {/* 1. Home / Marketplace Hub Screen */}
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Marketplace",
-          tabBarLabel: "Find Hub",
-          tabBarIcon: ({ color, size }) => (
-            <Icon name="search-outline" size={size ?? 24} color={color} />
-          ),
-        }}
-      />
-
-      {/* 2. Real-Time Bookings Screen Ledger */}
-      <Tabs.Screen
-        name="bookings"
-        options={{
-          title: "My Bookings",
-          tabBarLabel: "Bookings",
-          tabBarIcon: ({ color, size }) => (
-            <Icon name="briefcase-outline" size={size ?? 24} color={color} />
-          ),
-        }}
-      />
-
-      {/* 3. Account Settings Profile Screen */}
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: "Profile",
-          tabBarLabel: "Account",
-          tabBarIcon: ({ color, size }) => (
-            <Icon name="person-outline" size={size ?? 24} color={color} />
-          ),
-        }}
-      />
-
-      <Tabs.Screen
-        name="post-job"
-        options={{
-          href: null,
-        }}
-      />
-
-      <Tabs.Screen
-        name="jobs/[id]"
-        options={{
-          href: null, 
-        }}
-      />
-
-      <Tabs.Screen
-        name="services/[id]"
-        options={{
-          href: null, 
-        }}
-      />
-    </Tabs>
+    <JobStoreProvider>
+      <Stack screenOptions={{ headerShown: false }}>
+        {/* Mounts the sub-tabs navigation file layout safely */}
+        <Stack.Screen name="(tabs)" />
+        
+        {/* Dynamic sub-service selection screen now has safe context access! */}
+        <Stack.Screen name="services/[id]" />
+        
+        {/* Post-Job Multi-Step Wizard Layout Sub-Folder */}
+        <Stack.Screen name="post-job" />
+        
+        {/* Client Booking Details Inspector */}
+        <Stack.Screen name="jobs/[id]" />
+      </Stack>
+    </JobStoreProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  tabBar: {
-    backgroundColor: theme.colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
-    height: 64,
-    paddingBottom: 8,
-    paddingTop: 8,
-  },
-  tabBarLabel: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-});

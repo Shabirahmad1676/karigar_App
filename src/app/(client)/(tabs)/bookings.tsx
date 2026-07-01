@@ -3,13 +3,13 @@ import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, 
 import { useQuery } from "@tanstack/react-query";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { theme } from "../../theme";
-import { Card } from "../../components/ui/Card";
-import { Button } from "../../components/ui/Button";
-import { Badge, JobStatusType } from "../../components/ui/Badge";
-import { apiClient } from "../../lib/apiClient";
-import { useAuth } from "../../features/auth/store";
-import { socket } from "../../lib/socketClient";
+import { theme } from "../../../theme";
+import { Card } from "../../../components/ui/Card";
+import { Button } from "../../../components/ui/Button";
+import { Badge, JobStatusType } from "../../../components/ui/Badge";
+import { apiClient } from "../../../lib/apiClient";
+import { useAuth } from "../../../features/auth/store";
+import { socket } from "../../../lib/socketClient";
 import Icon from "@react-native-vector-icons/ionicons";
 
 interface JobBooking {
