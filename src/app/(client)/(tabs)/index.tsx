@@ -14,10 +14,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
-import { theme } from "../../theme";
-import { Card } from "../../components/ui/Card";
-import { apiClient } from "../../lib/apiClient";
-import { useAuthGuard } from "../../hooks/useAuthGuard";
+import { theme } from "../../../theme";
+import { Card } from "../../../components/ui/Card";
+import { apiClient } from "../../../lib/apiClient";
+import { useAuthGuard } from "../../../hooks/useAuthGuard";
 import Icon from "@react-native-vector-icons/ionicons";
 
 interface ServiceSubItem {
@@ -35,14 +35,26 @@ interface CategoryRelation {
   services: ServiceSubItem[];
 }
 
-// 📦 Structurally maps our dynamic live technician profile data signature
 interface ActiveFleetProfile {
   id: number;
   name: string;
   skillCategory: string;
   city: string;
-  isWorking: boolean; // 👈 Track if they are currently on a job
+  isWorking: boolean;
 }
+
+
+const CATEGORY_IMAGE_MAP: Record<string, string> = {
+  "Plumbing & Piping": "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?w=400&auto=format&fit=crop&q=80",
+  "Electrical & Smart Home": "https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=400&auto=format&fit=crop&q=80",
+  "AC & HVAC Maintenance": "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400&auto=format&fit=crop&q=80",
+  "Carpentry & Assembly": "https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&auto=format&fit=crop&q=80",
+  "Cleaning & Upkeep": "https://images.unsplash.com/photo-1581141872131-84d1d685098a?w=400&auto=format&fit=crop&q=80",
+  "Painting & Refinishing": "https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=400&auto=format&fit=crop&q=80",
+  "Gardening & Yard Care": "https://images.unsplash.com/photo-1557429287-b2e26467fc2b?w=400&auto=format&fit=crop&q=80",
+  "Waste & Junk Removal": "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=400&auto=format&fit=crop&q=80",
+  "default": "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=400&auto=format&fit=crop&q=80"
+};
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -59,7 +71,6 @@ export default function HomeScreen() {
     ]).start();
   }, []);
 
-  // Fetches structured craft categories from the server
   const { data: categories, isLoading: isLoadingCategories, error: errorCategories } = useQuery<CategoryRelation[]>({
     queryKey: ["marketplaceCategories"],
     queryFn: async () => {
@@ -68,7 +79,6 @@ export default function HomeScreen() {
     }
   });
 
-  // 📦 LIVE HOOK: Pulls the true verified operator fleet list from backend state variables
   const { data: nearbyTechs, isLoading: isLoadingTechs } = useQuery<ActiveFleetProfile[]>({
     queryKey: ["nearbyTechnicians"],
     queryFn: async () => {
@@ -88,6 +98,11 @@ export default function HomeScreen() {
       pathname: "/(client)/services/[id]",
       params: { id: categoryId }
     });
+  };
+
+  // Helper to safely get fallback images for newly added categories
+  const getCategoryImage = (name: string) => {
+    return CATEGORY_IMAGE_MAP[name] || CATEGORY_IMAGE_MAP["default"];
   };
 
   return (
@@ -139,11 +154,15 @@ export default function HomeScreen() {
               renderItem={({ item }) => (
                 <TouchableOpacity activeOpacity={0.85} onPress={() => handleCategoryPress(item.id)}>
                   <Card style={styles.categoryCardBox}>
-                    <View style={styles.iconCircleWrapper}>
-                      <Icon name={item.iconName as any} size={28} color={theme.colors.primary} />
+                    <Image 
+                      source={{ uri: getCategoryImage(item.name) }} 
+                      style={styles.categoryCardImage} 
+                      resizeMode="cover"
+                    />
+                    <View style={styles.categoryTextWrapper}>
+                      <Text style={styles.categoryName} numberOfLines={1}>{item.name}</Text>
+                      <Text style={styles.serviceCountLabel}>{item.services?.length || 0} Specialties</Text>
                     </View>
-                    <Text style={styles.categoryName} numberOfLines={2}>{item.name}</Text>
-                    <Text style={styles.serviceCountLabel}>{item.services?.length || 0} Specialties</Text>
                   </Card>
                 </TouchableOpacity>
               )}
@@ -159,7 +178,7 @@ export default function HomeScreen() {
           {isLoadingTechs ? (
             <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginVertical: 20 }} />
           ) : !nearbyTechs || nearbyTechs.length === 0 ? (
-            <Text style={styles.emptyTextNote}>⏳ No active dispatched specialists on standby right now in this zone.</Text>
+            <Text style={styles.emptyTextNote}>No active dispatched specialists on standby right now in this zone.</Text>
           ) : (
             <FlatList
               data={nearbyTechs}
@@ -171,7 +190,6 @@ export default function HomeScreen() {
                 <Card style={styles.techCardBox}>
                   <Image source={{ uri: "https://cdn-icons-png.flaticon.com/512/149/149071.png" }} style={styles.techAvatar} />
                   
-                  {/* Dynamic Custom Badge Row to Display availability state */}
                   <View style={[styles.techBadgeRow, { backgroundColor: item.isWorking ? "#FEE2F2" : theme.colors.primaryMuted }]}>
                     <Text style={[styles.techCategoryBadge, { color: item.isWorking ? "#B91C1C" : theme.colors.primary }]}>
                       {item.isWorking ? "On Work" : item.skillCategory}
@@ -225,10 +243,12 @@ const styles = StyleSheet.create({
   sectionSubtitle: { fontSize: theme.typography.fontSizes.xs, color: theme.colors.textSecondary, marginTop: 2 },
   horizontalListPadding: { paddingLeft: theme.spacing.xl, paddingRight: theme.spacing.sm, paddingVertical: theme.spacing.sm },
   
-  categoryCardBox: { width: 140, height: 155, marginRight: theme.spacing.md, borderRadius: 20, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surface, alignItems: "center", justifyContent: "center", padding: theme.spacing.sm },
-  iconCircleWrapper: { width: 56, height: 56, borderRadius: 28, backgroundColor: theme.colors.primaryMuted, justifyContent: "center", alignItems: "center", marginBottom: theme.spacing.sm },
-  categoryName: { fontSize: 13, fontWeight: "700", color: theme.colors.textPrimary, textAlign: "center", lineHeight: 18, marginBottom: 2 },
-  serviceCountLabel: { fontSize: 10, fontWeight: "600", color: theme.colors.textSecondary },
+  // 🌟 NEW CARD DESIGN: 150 width, padding eliminated to create flush structural image container grids
+  categoryCardBox: { width: 150, height: 165, marginRight: theme.spacing.md, borderRadius: 16, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surface, overflow: "hidden", padding: 0 },
+  categoryCardImage: { width: "100%", height: 105, backgroundColor: theme.colors.border },
+  categoryTextWrapper: { paddingVertical: theme.spacing.sm, paddingHorizontal: 12, justifyContent: "center" },
+  categoryName: { fontSize: 14, fontWeight: "700", color: theme.colors.textPrimary, marginBottom: 2 },
+  serviceCountLabel: { fontSize: 11, fontWeight: "500", color: theme.colors.textSecondary },
 
   techCardBox: { width: 140, padding: theme.spacing.md, marginRight: theme.spacing.md, borderRadius: 20, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surface, alignItems: "center" },
   techAvatar: { width: 64, height: 64, borderRadius: 32, marginBottom: theme.spacing.sm, backgroundColor: theme.colors.border },
